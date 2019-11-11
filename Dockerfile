@@ -1,14 +1,14 @@
 FROM alpine:3.10
 
-ARG FACEBOOK=1
-ARG STEAM=1
-ARG SKYPEWEB=1
-ARG TELEGRAM=1
+ARG FACEBOOK=0
+ARG STEAM=0
+ARG SKYPEWEB=0
+ARG TELEGRAM=0
 ARG HANGOUTS=1
 ARG SLACK=1
-ARG SIPE=1
+ARG SIPE=0
 ARG DISCORD=1
-ARG ROCKETCHAT=1
+ARG ROCKETCHAT=0
 
 ENV BITLBEE_VERSION 3.6
 ENV FACEBOOK_VERSION v1.2.0
@@ -62,7 +62,7 @@ RUN addgroup -g 101 -S bitlbee \
  && git clone https://github.com/bitlbee/bitlbee.git \
  && cd bitlbee \
  && git checkout ${BITLBEE_VERSION} \
- && ./configure --build=x86_64-alpine-linux-musl --host=x86_64-alpine-linux-musl --purple=1 --ssl=openssl --prefix=/usr --etcdir=/etc/bitlbee \
+ && ./configure --purple=1 --ssl=openssl --prefix=/usr --etcdir=/etc/bitlbee \
  && make \
  && make install \
  && make install-dev \
@@ -78,7 +78,7 @@ RUN addgroup -g 101 -S bitlbee \
  && git clone https://github.com/bitlbee/bitlbee-steam.git \
  && cd bitlbee-steam \
  && git checkout ${STEAM_VERSION} \
- && ./autogen.sh --build=x86_64-alpine-linux-musl --host=x86_64-alpine-linux-musl \
+ && ./autogen.sh \
  && make \
  && make install \
  && strip /usr/lib/bitlbee/steam.so; fi \
@@ -93,7 +93,7 @@ RUN addgroup -g 101 -S bitlbee \
  && git clone --recursive https://github.com/majn/telegram-purple \
  && cd telegram-purple \
  && git checkout ${TELEGRAM_VERSION} \
- && ./configure --build=x86_64-alpine-linux-musl --host=x86_64-alpine-linux-musl \
+ && ./configure \
  && make \
  && make install \
  && strip /usr/lib/purple-2/telegram-purple.so; fi \
@@ -115,7 +115,7 @@ RUN addgroup -g 101 -S bitlbee \
  && cd sipe \
  && git checkout ${SIPE_VERSION} \
  && ./autogen.sh \
- && ./configure --build=x86_64-alpine-linux-musl --host=x86_64-alpine-linux-musl --prefix=/usr \
+ && ./configure --prefix=/usr \
  && make \
  && make install \
  && strip /usr/lib/purple-2/libsipe.so; fi \
@@ -124,7 +124,7 @@ RUN addgroup -g 101 -S bitlbee \
  && cd bitlbee-discord \
  && git checkout ${DISCORD_VERSION} \
  && ./autogen.sh \
- && ./configure --build=x86_64-alpine-linux-musl --host=x86_64-alpine-linux-musl --prefix=/usr \
+ && ./configure --prefix=/usr \
  && make \
  && make install \
  && strip /usr/lib/bitlbee/discord.so; fi \
