@@ -1,0 +1,76 @@
+---
+kind: pipeline
+type: docker
+name: docker
+
+steps:
+  - name: docker
+    image: docker:stable-dind
+    privileged: true
+    detach: true
+    command: [ "dockerd", "--host=tcp://0.0.0.0:2375" ]
+
+  - name: test
+    image: ezkrg/buildx:latest
+    environment:
+      USER:
+        from_secret: DHU
+      PASSWORD:
+        from_secret: DHP
+      DOCKER_HOST: tcp://docker:2375
+    commands:
+    - sleep 5
+    - docker buildx create --use --name docker --node docker --platform linux/amd64 --driver docker-container $DOCKER_HOST
+    - echo $PASSWORD | docker login --username $USER --password-stdin
+    - docker buildx build --load --cache-from ezkrg/cache:bitlbee-libpurple --cache-to ezkrg/cache:bitlbee-libpurple -t ezkrg/bitlbee-libpurple:test .
+    - docker push ezkrg/bitlbee-libpurple:test
+
+  - name: release
+    image: docker:stable
+    environment:
+      USER:
+        from_secret: DHU
+      PASSWORD:
+        from_secret: DHP
+      DOCKER_HOST: tcp://docker:2375
+    commands:
+    - echo $PASSWORD | docker login --username $USER --password-stdin
+    - docker tag ezkrg/bitlbee-libpurple:test ezkrg/bitlbee-libpurple:$DRONE_TAG
+    - docker push ezkrg/bitlbee-libpurple:$DRONE_TAG
+    - docker tag ezkrg/bitlbee-libpurple:test ezkrg/bitlbee-libpurple:latest
+    - docker push ezkrg/bitlbee-libpurple:latest
+    when:
+      event:
+      - tag
+
+---
+kind: pipeline 
+type: docker
+name: notification
+
+clone:
+  disable: true
+
+steps:
+  - name: telegram
+    image: appleboy/drone-telegram:1.3.4
+    failure: ignore
+    settings:
+      token:
+        from_secret: TT
+      to:
+        from_secret: TID
+      message: |
+        *{{commit.author}} ({{commit.email}})*  
+        *{{repo.namespace}}/{{repo.name}}*  
+        [Pipeline #{{build.number}} has {{#success build.status}}passed{{else}}failed{{/success}} in {{duration build.started build.finished}}]({{build.link}}) {{#success build.status}}✅{{else}}❌{{/success}}  
+        *Branch:* [{{commit.branch}}](https://github.com/{{repo.namespace}}/{{repo.name}}/commits/{{commit.branch}}) *Commit:* [{{commit.message}}]({{commit.link}})
+
+depends_on:
+  - docker
+
+---
+kind: signature
+hmac: 6d34136b0fc3ae4a1c12e759c5eb553b3be864760bf1efd26c3b2b00b711229a
+
+...
